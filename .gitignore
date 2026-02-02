@@ -1,30 +1,66 @@
-### IntelliJ IDEA ###
+---
+
+## `.gitignore`
+
+```gitignore
+# =========================
+# Java build outputs
+# =========================
+*.class
+*.log
+
+# Common output folders
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-.kotlin
-
-### Eclipse ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
 bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
+target/
+build/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+# =========================
+# IDE: IntelliJ IDEA
+# =========================
+.idea/
+*.iml
 
-### VS Code ###
+# =========================
+# IDE: Eclipse
+# =========================
+.project
+.classpath
+.settings/
+
+# =========================
+# IDE: NetBeans
+# =========================
+nbproject/private/
+dist/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+# =========================
+# IDE: VS Code
+# =========================
 .vscode/
 
-### Mac OS ###
+# =========================
+# OS files
+# =========================
 .DS_Store
+Thumbs.db
+
+# =========================
+# Local env / secrets
+# =========================
+.env
+.env.*
+db.properties
+*.local
+
+# =========================
+# Notes about JDBC .jar:
+# -------------------------
+# We do NOT ignore /lib/*.jar here intentionally,
+# because you may want to include the JDBC driver in the repo.
+# If your instructor requires you NOT to upload jars, then add:
+# lib/*.jar
+# =========================

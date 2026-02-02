@@ -1,29 +1,32 @@
 package model;
 
+/**
+ * Child class: Shirt.
+ * Extra field: sleeveType.
+ */
 public class Shirt extends ClothingItem {
 
-    private String sleeveType; // Example: "Short", "Long"
+    private String sleeveType; // e.g. "Short", "Long"
 
     public Shirt(int itemId, String name, String size, double price, String sleeveType) {
         super(itemId, name, size, price);
         setSleeveType(sleeveType);
     }
 
+    @Override
+    public String getType() {
+        return "SHIRT";
+    }
+
     public String getSleeveType() {
         return sleeveType;
     }
 
-    // Setter throws exception for invalid data
     public void setSleeveType(String sleeveType) {
         if (sleeveType == null || sleeveType.trim().isEmpty()) {
-            throw new IllegalArgumentException("Sleeve type cannot be empty.");
+            throw new IllegalArgumentException("sleeveType cannot be empty.");
         }
         this.sleeveType = sleeveType.trim();
-    }
-
-    @Override
-    public void wear() {
-        System.out.println("Putting on shirt \"" + name + "\" (" + sleeveType + " sleeves).");
     }
 
     @Override
