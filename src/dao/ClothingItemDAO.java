@@ -13,404 +13,234 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DAO class (required).
- * <p>
- * Requirements satisfied:
- * - PreparedStatement used for all SQL
- * - INSERT methods for each entity type (insertShirt, insertJacket)
- * - getAll(), getById(), and filtered SELECT (getByType)
- * - UPDATE methods for each entity type
- * - DELETE by ID
- * - Search by name (ILIKE with %), search by numeric field (price)
- * <p>
- * Code Quality:
- * - try/catch/finally in each method
- * - resources closed in finally (connection/resultset/statement)
- */
 public class ClothingItemDAO {
 
-    // ------------------ CREATE (INSERT) ------------------
-    // Defense format explicitly wants insert method per entity type.
+    private static final String SELECT_COLUMNS =
+            "item_id, type, name, size, price, sleeve_type, season";
 
-    public boolean insertShirt(Shirt shirt) {
+    // -------------------- INSERT --------------------
+
+    public boolean insertShirt(Shirt shirt) throws SQLException {
         String sql = "INSERT INTO clothing_items (item_id, type, name, size, price, sleeve_type, season) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-        Connection conn = null;
-        PreparedStatement ps = null;
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
+            statement.setInt(1, shirt.getItemId());
+            statement.setString(2, shirt.getType());
+            statement.setString(3, shirt.getName());
+            statement.setString(4, shirt.getSize());
+            statement.setDouble(5, shirt.getPrice());
+            statement.setString(6, shirt.getSleeveType());
+            statement.setNull(7, Types.VARCHAR);
 
-            ps.setInt(1, shirt.getItemId());
-            ps.setString(2, "SHIRT");
-            ps.setString(3, shirt.getName());
-            ps.setString(4, shirt.getSize());
-            ps.setDouble(5, shirt.getPrice());
-            ps.setString(6, shirt.getSleeveType());
-            ps.setNull(7, Types.VARCHAR);
-
-            return ps.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            System.out.println("DB insertShirt error: " + e.getMessage());
-            return false;
-
-        } finally {
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
+            return statement.executeUpdate() > 0;
         }
     }
 
-    public boolean insertJacket(Jacket jacket) {
+    public boolean insertJacket(Jacket jacket) throws SQLException {
         String sql = "INSERT INTO clothing_items (item_id, type, name, size, price, sleeve_type, season) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-        Connection conn = null;
-        PreparedStatement ps = null;
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
+            statement.setInt(1, jacket.getItemId());
+            statement.setString(2, jacket.getType());
+            statement.setString(3, jacket.getName());
+            statement.setString(4, jacket.getSize());
+            statement.setDouble(5, jacket.getPrice());
+            statement.setNull(6, Types.VARCHAR);
+            statement.setString(7, jacket.getSeason());
 
-            ps.setInt(1, jacket.getItemId());
-            ps.setString(2, "JACKET");
-            ps.setString(3, jacket.getName());
-            ps.setString(4, jacket.getSize());
-            ps.setDouble(5, jacket.getPrice());
-            ps.setNull(6, Types.VARCHAR);
-            ps.setString(7, jacket.getSeason());
-
-            return ps.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            System.out.println("DB insertJacket error: " + e.getMessage());
-            return false;
-
-        } finally {
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
+            return statement.executeUpdate() > 0;
         }
     }
 
-    // ------------------ READ (SELECT) ------------------
+    // -------------------- SELECT --------------------
 
-    public List<ClothingItem> getAll() {
-        String sql = "SELECT item_id, type, name, size, price, sleeve_type, season " +
-                "FROM clothing_items ORDER BY item_id";
-
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
+    public List<ClothingItem> getAll() throws SQLException {
         List<ClothingItem> items = new ArrayList<>();
+        String sql = "SELECT " + SELECT_COLUMNS + " FROM clothing_items ORDER BY item_id";
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            rs = ps.executeQuery();
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
 
-            while (rs.next()) {
-                items.add(mapRow(rs));
+            while (resultSet.next()) {
+                items.add(mapRow(resultSet));
             }
-
-        } catch (SQLException e) {
-            System.out.println("DB getAll error: " + e.getMessage());
-
-        } finally {
-            DatabaseConnection.closeResultSet(rs);
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
         }
 
         return items;
     }
 
-    /**
-     * Required by defence format: getById().
-     * Returns single object or null if not found.
-     */
-    public ClothingItem getById(int itemId) {
-        String sql = "SELECT item_id, type, name, size, price, sleeve_type, season " +
-                "FROM clothing_items WHERE item_id = ?";
+    public ClothingItem getById(int itemId) throws SQLException {
+        String sql = "SELECT " + SELECT_COLUMNS + " FROM clothing_items WHERE item_id = ?";
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, itemId);
+            statement.setInt(1, itemId);
 
-            rs = ps.executeQuery();
-
-            if (rs.next()) {
-                return mapRow(rs);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapRow(resultSet);
+                }
             }
-            return null;
-
-        } catch (SQLException e) {
-            System.out.println("DB getById error: " + e.getMessage());
-            return null;
-
-        } finally {
-            DatabaseConnection.closeResultSet(rs);
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
         }
+
+        return null;
     }
 
-    /**
-     * Filtered SELECT (required at least one filtered SELECT).
-     * Used to display only shirts or only jackets.
-     */
-    public List<ClothingItem> getByType(String type) {
-        String sql = "SELECT item_id, type, name, size, price, sleeve_type, season " +
-                "FROM clothing_items WHERE type = ? ORDER BY item_id";
-
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
+    public List<ClothingItem> getByType(String type) throws SQLException {
         List<ClothingItem> items = new ArrayList<>();
+        String sql = "SELECT " + SELECT_COLUMNS + " FROM clothing_items WHERE type = ? ORDER BY item_id";
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, type);
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            rs = ps.executeQuery();
+            statement.setString(1, type);
 
-            while (rs.next()) {
-                items.add(mapRow(rs));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    items.add(mapRow(resultSet));
+                }
             }
-
-        } catch (SQLException e) {
-            System.out.println("DB getByType error: " + e.getMessage());
-
-        } finally {
-            DatabaseConnection.closeResultSet(rs);
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
         }
 
         return items;
     }
 
-    // ------------------ UPDATE ------------------
+    // -------------------- UPDATE --------------------
 
-    public boolean updateShirt(int itemId, String name, String size, double price, String sleeveType) {
+    public boolean updateShirt(int itemId, String name, String size, double price, String sleeveType) throws SQLException {
         String sql = "UPDATE clothing_items " +
                 "SET name = ?, size = ?, price = ?, sleeve_type = ?, season = NULL " +
                 "WHERE item_id = ? AND type = 'SHIRT'";
 
-        Connection conn = null;
-        PreparedStatement ps = null;
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
+            statement.setString(1, name);
+            statement.setString(2, size);
+            statement.setDouble(3, price);
+            statement.setString(4, sleeveType);
+            statement.setInt(5, itemId);
 
-            ps.setString(1, name);
-            ps.setString(2, size);
-            ps.setDouble(3, price);
-            ps.setString(4, sleeveType);
-            ps.setInt(5, itemId);
-
-            return ps.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            System.out.println("DB updateShirt error: " + e.getMessage());
-            return false;
-
-        } finally {
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
+            return statement.executeUpdate() > 0;
         }
     }
 
-    public boolean updateJacket(int itemId, String name, String size, double price, String season) {
+    public boolean updateJacket(int itemId, String name, String size, double price, String season) throws SQLException {
         String sql = "UPDATE clothing_items " +
                 "SET name = ?, size = ?, price = ?, season = ?, sleeve_type = NULL " +
                 "WHERE item_id = ? AND type = 'JACKET'";
 
-        Connection conn = null;
-        PreparedStatement ps = null;
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
+            statement.setString(1, name);
+            statement.setString(2, size);
+            statement.setDouble(3, price);
+            statement.setString(4, season);
+            statement.setInt(5, itemId);
 
-            ps.setString(1, name);
-            ps.setString(2, size);
-            ps.setDouble(3, price);
-            ps.setString(4, season);
-            ps.setInt(5, itemId);
-
-            return ps.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            System.out.println("DB updateJacket error: " + e.getMessage());
-            return false;
-
-        } finally {
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
+            return statement.executeUpdate() > 0;
         }
     }
 
-    // ------------------ DELETE ------------------
+    // -------------------- DELETE --------------------
 
-    public boolean deleteById(int itemId) {
+    public boolean deleteById(int itemId) throws SQLException {
         String sql = "DELETE FROM clothing_items WHERE item_id = ?";
 
-        Connection conn = null;
-        PreparedStatement ps = null;
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, itemId);
-
-            return ps.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            System.out.println("DB deleteById error: " + e.getMessage());
-            return false;
-
-        } finally {
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
+            statement.setInt(1, itemId);
+            return statement.executeUpdate() > 0;
         }
     }
 
-    // ------------------ SEARCH ------------------
+    // -------------------- SEARCH --------------------
 
-    public List<ClothingItem> searchByName(String namePart) {
-        // ILIKE + %...% = case-insensitive partial search in PostgreSQL
-        String sql = "SELECT item_id, type, name, size, price, sleeve_type, season " +
-                "FROM clothing_items WHERE name ILIKE ? ORDER BY item_id";
-
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
+    public List<ClothingItem> searchByName(String namePart) throws SQLException {
         List<ClothingItem> items = new ArrayList<>();
+        String sql = "SELECT " + SELECT_COLUMNS + " FROM clothing_items WHERE name ILIKE ? ORDER BY item_id";
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, "%" + namePart + "%");
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            rs = ps.executeQuery();
+            statement.setString(1, "%" + namePart + "%");
 
-            while (rs.next()) {
-                items.add(mapRow(rs));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    items.add(mapRow(resultSet));
+                }
             }
-
-        } catch (SQLException e) {
-            System.out.println("DB searchByName error: " + e.getMessage());
-
-        } finally {
-            DatabaseConnection.closeResultSet(rs);
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
         }
 
         return items;
     }
 
-    public List<ClothingItem> searchByPriceRange(double minPrice, double maxPrice) {
-        // Numeric search using BETWEEN, ordered by price DESC
-        String sql = "SELECT item_id, type, name, size, price, sleeve_type, season " +
-                "FROM clothing_items WHERE price BETWEEN ? AND ? ORDER BY price DESC";
-
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
+    public List<ClothingItem> searchByPriceRange(double minPrice, double maxPrice) throws SQLException {
         List<ClothingItem> items = new ArrayList<>();
+        String sql = "SELECT " + SELECT_COLUMNS + " FROM clothing_items " +
+                "WHERE price BETWEEN ? AND ? ORDER BY price DESC";
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setDouble(1, minPrice);
-            ps.setDouble(2, maxPrice);
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            rs = ps.executeQuery();
+            statement.setDouble(1, minPrice);
+            statement.setDouble(2, maxPrice);
 
-            while (rs.next()) {
-                items.add(mapRow(rs));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    items.add(mapRow(resultSet));
+                }
             }
-
-        } catch (SQLException e) {
-            System.out.println("DB searchByPriceRange error: " + e.getMessage());
-
-        } finally {
-            DatabaseConnection.closeResultSet(rs);
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
         }
 
         return items;
     }
 
-    public List<ClothingItem> searchByMinPrice(double minPrice) {
-        // Numeric search using >=, ordered by price DESC
-        String sql = "SELECT item_id, type, name, size, price, sleeve_type, season " +
-                "FROM clothing_items WHERE price >= ? ORDER BY price DESC";
-
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
+    public List<ClothingItem> searchByMinPrice(double minPrice) throws SQLException {
         List<ClothingItem> items = new ArrayList<>();
+        String sql = "SELECT " + SELECT_COLUMNS + " FROM clothing_items " +
+                "WHERE price >= ? ORDER BY price DESC";
 
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setDouble(1, minPrice);
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            rs = ps.executeQuery();
+            statement.setDouble(1, minPrice);
 
-            while (rs.next()) {
-                items.add(mapRow(rs));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    items.add(mapRow(resultSet));
+                }
             }
-
-        } catch (SQLException e) {
-            System.out.println("DB searchByMinPrice error: " + e.getMessage());
-
-        } finally {
-            DatabaseConnection.closeResultSet(rs);
-            DatabaseConnection.closeStatement(ps);
-            DatabaseConnection.closeConnection(conn);
         }
 
         return items;
     }
 
-    // ------------------ Helper: map row -> correct object ------------------
+    // -------------------- Helper --------------------
 
-    private ClothingItem mapRow(ResultSet rs) throws SQLException {
-        int id = rs.getInt("item_id");
-        String type = rs.getString("type");
-        String name = rs.getString("name");
-        String size = rs.getString("size");
-        double price = rs.getDouble("price");
+    private ClothingItem mapRow(ResultSet resultSet) throws SQLException {
+        int id = resultSet.getInt("item_id");
+        String type = resultSet.getString("type");
+        String name = resultSet.getString("name");
+        String size = resultSet.getString("size");
+        double price = resultSet.getDouble("price");
 
-        if ("SHIRT".equalsIgnoreCase(type)) {
-            String sleeve = rs.getString("sleeve_type");
+        if (type != null && type.equalsIgnoreCase("SHIRT")) {
+            String sleeve = resultSet.getString("sleeve_type");
             return new Shirt(id, name, size, price, sleeve);
         }
 
-        if ("JACKET".equalsIgnoreCase(type)) {
-            String season = rs.getString("season");
-            return new Jacket(id, name, size, price, season);
-        }
-
-        throw new SQLException("Unknown item type in DB: " + type);
+        String season = resultSet.getString("season");
+        return new Jacket(id, name, size, price, season);
     }
 }

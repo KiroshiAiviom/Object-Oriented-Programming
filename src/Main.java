@@ -1,8 +1,9 @@
 import menu.Menu;
 import menu.MenuManager;
 
-void main() {
-    // Minimal Main: create menu and run.
-    Menu menu = new MenuManager();
-    menu.run();
+public class Main {
+    public static void main(String[] args) {
+        Menu menu = new MenuManager();
+        menu.run();
+    }
 }

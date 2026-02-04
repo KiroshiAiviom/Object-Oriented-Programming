@@ -1,12 +1,8 @@
 package model;
 
-/**
- * Child class: Shirt.
- * Extra field: sleeveType.
- */
 public class Shirt extends ClothingItem {
 
-    private String sleeveType; // e.g. "Short", "Long"
+    private String sleeveType;
 
     public Shirt(int itemId, String name, String size, double price, String sleeveType) {
         super(itemId, name, size, price);

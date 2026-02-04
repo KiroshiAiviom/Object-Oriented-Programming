@@ -6,36 +6,32 @@ import model.ClothingItem;
 import model.Jacket;
 import model.Shirt;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Scanner;
 
-/**
- * MenuManager:
- * - Implements Menu (Week 6 requirement)
- * - Loads data from database on demand (NO in-memory inventory ArrayList field)
- * - Contains CRUD + search options required for Week 7/8 defence
- */
 public class MenuManager implements Menu {
 
-    private final ClothingItemDAO dao = new ClothingItemDAO();
     private final Scanner scanner = new Scanner(System.in);
+    private final ClothingItemDAO dao = new ClothingItemDAO();
 
     @Override
     public void displayMenu() {
-        System.out.println("\n=== CLOTHING STORE (Assignment 4 / Week 7-8) ===");
+        System.out.println("\n=== CLOTHING STORE ===");
         System.out.println("1. Add Shirt (INSERT)");
         System.out.println("2. Add Jacket (INSERT)");
         System.out.println("3. View All Items (SELECT)");
         System.out.println("4. View Shirts Only (Filtered SELECT)");
         System.out.println("5. View Jackets Only (Filtered SELECT)");
-        System.out.println("6. Get Item by ID (getById SELECT)");
-        System.out.println("7. Update Shirt by ID (UPDATE)");
-        System.out.println("8. Update Jacket by ID (UPDATE)");
-        System.out.println("9. Delete Item by ID (DELETE)");
+        System.out.println("6. Get Item by ID (getById)");
+        System.out.println("7. Update Shirt (UPDATE)");
+        System.out.println("8. Update Jacket (UPDATE)");
+        System.out.println("9. Delete Item (DELETE)");
         System.out.println("10. Search by Name (ILIKE)");
         System.out.println("11. Search by Price Range (BETWEEN)");
         System.out.println("12. Search by Min Price (>=)");
         System.out.println("0. Exit");
+        System.out.print("Choose: ");
     }
 
     @Override
@@ -47,7 +43,7 @@ public class MenuManager implements Menu {
                 displayMenu();
 
                 try {
-                    int choice = readInt("Choice: ");
+                    int choice = Integer.parseInt(scanner.nextLine());
 
                     switch (choice) {
                         case 1: addShirt(); break;
@@ -60,35 +56,34 @@ public class MenuManager implements Menu {
                         case 8: updateJacket(); break;
                         case 9: deleteItem(); break;
                         case 10: searchByName(); break;
-                        case 11: searchByRange(); break;
-                        case 12: searchByMin(); break;
+                        case 11: searchByPriceRange(); break;
+                        case 12: searchByMinPrice(); break;
                         case 0:
                             running = false;
                             System.out.println("Goodbye!");
                             break;
                         default:
-                            throw new InvalidInputException("Invalid menu choice.");
+                            System.out.println("Invalid choice");
                     }
 
                 } catch (NumberFormatException e) {
-                    System.out.println("Error: enter a valid number.");
+                    System.out.println("Enter a valid number!");
                 } catch (InvalidInputException e) {
                     System.out.println("Error: " + e.getMessage());
                 } catch (IllegalArgumentException e) {
-                    // Thrown by model validation (setters)
                     System.out.println("Error: " + e.getMessage());
+                } catch (SQLException e) {
+                    System.out.println("Database error: " + e.getMessage());
                 }
-
-                if (running) pause();
             }
         } finally {
             scanner.close();
         }
     }
 
-    // ------------------ INSERT ------------------
+    // -------------------- INSERT --------------------
 
-    private void addShirt() throws InvalidInputException {
+    private void addShirt() throws InvalidInputException, SQLException {
         int id = readInt("Item ID: ");
         String name = readText("Name: ");
         String size = readText("Size: ");
@@ -96,12 +91,11 @@ public class MenuManager implements Menu {
         String sleeves = readText("Sleeve type: ");
 
         Shirt shirt = new Shirt(id, name, size, price, sleeves);
-
         boolean ok = dao.insertShirt(shirt);
         System.out.println(ok ? "Inserted." : "Insert failed.");
     }
 
-    private void addJacket() throws InvalidInputException {
+    private void addJacket() throws InvalidInputException, SQLException {
         int id = readInt("Item ID: ");
         String name = readText("Name: ");
         String size = readText("Size: ");
@@ -109,14 +103,13 @@ public class MenuManager implements Menu {
         String season = readText("Season: ");
 
         Jacket jacket = new Jacket(id, name, size, price, season);
-
         boolean ok = dao.insertJacket(jacket);
         System.out.println(ok ? "Inserted." : "Insert failed.");
     }
 
-    // ------------------ READ (getById) ------------------
+    // -------------------- SELECT --------------------
 
-    private void getById() throws InvalidInputException {
+    private void getById() throws InvalidInputException, SQLException {
         int id = readInt("Enter item ID: ");
         ClothingItem item = dao.getById(id);
 
@@ -129,9 +122,9 @@ public class MenuManager implements Menu {
         System.out.println("10% off price: " + String.format("%.2f KZT", item.getDiscountedPrice(10)));
     }
 
-    // ------------------ UPDATE ------------------
+    // -------------------- UPDATE --------------------
 
-    private void updateShirt() throws InvalidInputException {
+    private void updateShirt() throws InvalidInputException, SQLException {
         int id = readInt("Shirt ID: ");
 
         ClothingItem existing = dao.getById(id);
@@ -149,14 +142,13 @@ public class MenuManager implements Menu {
         double price = readDouble("New price: ");
         String sleeves = readText("New sleeve type: ");
 
-        // Validate via constructor
         new Shirt(id, name, size, price, sleeves);
 
         boolean ok = dao.updateShirt(id, name, size, price, sleeves);
         System.out.println(ok ? "Updated." : "Update failed.");
     }
 
-    private void updateJacket() throws InvalidInputException {
+    private void updateJacket() throws InvalidInputException, SQLException {
         int id = readInt("Jacket ID: ");
 
         ClothingItem existing = dao.getById(id);
@@ -180,22 +172,21 @@ public class MenuManager implements Menu {
         System.out.println(ok ? "Updated." : "Update failed.");
     }
 
-    // ------------------ DELETE ------------------
+    // -------------------- DELETE --------------------
 
-    private void deleteItem() throws InvalidInputException {
+    private void deleteItem() throws InvalidInputException, SQLException {
         int id = readInt("Item ID to delete: ");
 
-        // "Safe deletion pattern": show the record, then confirm delete.
-        ClothingItem item = dao.getById(id);
-        if (item == null) {
+        ClothingItem existing = dao.getById(id);
+        if (existing == null) {
             System.out.println("Item not found.");
             return;
         }
 
-        System.out.println("Found: " + item);
+        System.out.println("Found: " + existing);
         String confirm = readText("Type YES to confirm deletion: ");
 
-        if (!"YES".equalsIgnoreCase(confirm)) {
+        if (!confirm.equalsIgnoreCase("YES")) {
             System.out.println("Cancelled.");
             return;
         }
@@ -204,56 +195,59 @@ public class MenuManager implements Menu {
         System.out.println(ok ? "Deleted." : "Delete failed.");
     }
 
-    // ------------------ SEARCH ------------------
+    // -------------------- SEARCH --------------------
 
-    private void searchByName() throws InvalidInputException {
+    private void searchByName() throws InvalidInputException, SQLException {
         String part = readText("Name contains: ");
         printItems(dao.searchByName(part));
     }
 
-    private void searchByRange() throws InvalidInputException {
+    private void searchByPriceRange() throws InvalidInputException, SQLException {
         double min = readDouble("Min price: ");
         double max = readDouble("Max price: ");
-        if (min > max) throw new IllegalArgumentException("Min cannot be greater than max.");
+
+        if (min > max) {
+            System.out.println("Min price cannot be bigger than max price.");
+            return;
+        }
+
         printItems(dao.searchByPriceRange(min, max));
     }
 
-    private void searchByMin() throws InvalidInputException {
+    private void searchByMinPrice() throws InvalidInputException, SQLException {
         double min = readDouble("Min price: ");
         printItems(dao.searchByMinPrice(min));
     }
 
-    // ------------------ Output helper ------------------
+    // -------------------- Helpers --------------------
 
     private void printItems(List<ClothingItem> items) {
         if (items.isEmpty()) {
             System.out.println("No results.");
             return;
         }
+
         for (ClothingItem item : items) {
             System.out.println(item);
         }
     }
 
-    // ------------------ Input helpers ------------------
+    private String readText(String prompt) throws InvalidInputException {
+        System.out.print(prompt);
+        String text = scanner.nextLine().trim();
+        if (text.isEmpty()) {
+            throw new InvalidInputException("Input cannot be empty");
+        }
+        return text;
+    }
 
     private int readInt(String prompt) throws InvalidInputException {
-        return Integer.parseInt(readText(prompt));
+        String text = readText(prompt);
+        return Integer.parseInt(text);
     }
 
     private double readDouble(String prompt) throws InvalidInputException {
-        return Double.parseDouble(readText(prompt));
-    }
-
-    private String readText(String prompt) throws InvalidInputException {
-        System.out.print(prompt);
-        String s = scanner.nextLine().trim();
-        if (s.isEmpty()) throw new InvalidInputException("Input cannot be empty.");
-        return s;
-    }
-
-    private void pause() {
-        System.out.print("\nPress Enter...");
-        scanner.nextLine();
+        String text = readText(prompt);
+        return Double.parseDouble(text);
     }
 }

@@ -1,12 +1,8 @@
 package model;
 
-/**
- * Child class: Jacket.
- * Extra field: season.
- */
 public class Jacket extends ClothingItem {
 
-    private String season; // e.g. "Winter", "Autumn", "Spring"
+    private String season;
 
     public Jacket(int itemId, String name, String size, double price, String season) {
         super(itemId, name, size, price);
