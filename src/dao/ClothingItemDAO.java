@@ -18,8 +18,6 @@ public class ClothingItemDAO {
     private static final String SELECT_COLUMNS =
             "item_id, type, name, size, price, sleeve_type, season";
 
-    // -------------------- INSERT --------------------
-
     public boolean insertShirt(Shirt shirt) throws SQLException {
         String sql = "INSERT INTO clothing_items (item_id, type, name, size, price, sleeve_type, season) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -57,8 +55,6 @@ public class ClothingItemDAO {
             return statement.executeUpdate() > 0;
         }
     }
-
-    // -------------------- SELECT --------------------
 
     public List<ClothingItem> getAll() throws SQLException {
         List<ClothingItem> items = new ArrayList<>();
@@ -113,8 +109,6 @@ public class ClothingItemDAO {
         return items;
     }
 
-    // -------------------- UPDATE --------------------
-
     public boolean updateShirt(int itemId, String name, String size, double price, String sleeveType) throws SQLException {
         String sql = "UPDATE clothing_items " +
                 "SET name = ?, size = ?, price = ?, sleeve_type = ?, season = NULL " +
@@ -151,8 +145,6 @@ public class ClothingItemDAO {
         }
     }
 
-    // -------------------- DELETE --------------------
-
     public boolean deleteById(int itemId) throws SQLException {
         String sql = "DELETE FROM clothing_items WHERE item_id = ?";
 
@@ -163,8 +155,6 @@ public class ClothingItemDAO {
             return statement.executeUpdate() > 0;
         }
     }
-
-    // -------------------- SEARCH --------------------
 
     public List<ClothingItem> searchByName(String namePart) throws SQLException {
         List<ClothingItem> items = new ArrayList<>();
@@ -225,8 +215,6 @@ public class ClothingItemDAO {
 
         return items;
     }
-
-    // -------------------- Helper --------------------
 
     private ClothingItem mapRow(ResultSet resultSet) throws SQLException {
         int id = resultSet.getInt("item_id");
